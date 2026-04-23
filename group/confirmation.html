@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="shortcut icon" href="https://lh3.googleusercontent.com/ywesC1_Rzifbvs8qVqqp5xJQN1IkP2VQ7hcDU7KKiNJx7nb5oD4bE3VNN9Pk3ZGaFHtF=w300" />
+  <title>Virement Confirmé</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .success-card {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #e6ffe6;
+      border-left: 5px solid #4CAF50;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .success-card h2 { color: #4CAF50; margin-bottom: 15px; }
+    .error-sync { background: #ffe6e6; border-left-color: #d9534f; }
+    .error-sync h2 { color: #d9534f; }
+  </style>
+</head>
+<body>
+<header>
+  <h1> <img src="https://banque.meilleurtaux.com/images/actu/logos/societe-generale-logo.png" alt="Ecobank Logo" height="120"></h1>
+</header>
+
+<div class="full-container">
+  <main class="main" style="text-align: center; padding: 50px;">
+    <div id="confirmation-card" class="success-card">
+      <h2>✅ Virement Enregistré et Confirmé !</h2>
+      <p>Votre ordre de virement a été transmis. Une attestation de virement a été envoyée à l’adresse mail fournie.</p>
+
+      <p style="font-size: 1.2em; font-weight: bold; margin: 20px 0;">
+        Montant traité : <span id="montant-traite" style="color: #d9534f;">...</span>
+      </p>
+
+      <div id="details"></div>
+
+      <p id="sync-message">Le solde de votre compte est en cours d'ajustement...</p>
+
+      <a href="dashboard.html" class="btn-primary" style="margin-top: 30px; background: #004b91;">Retour à l'accueil</a>
+    </div>
+  </main>
+</div>
+
+<footer>
+  Mentions légales – Sécurité – Accessibilité – Plan du site
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="shared.js"></script>
+<script>
+// Assure la connexion
+checkLogin();
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const card = document.getElementById('confirmation-card');
+  const montantDisplay = document.getElementById('montant-traite');
+  const syncMessage = document.getElementById('sync-message');
+  const details = document.getElementById('details');
+
+  // Récupération des paramètres de l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const montantParam = urlParams.get('montant');
+  const motif = urlParams.get('motif');
+  const iban = urlParams.get('iban');
+  const bic = urlParams.get('bic');
+  const domiciliation = urlParams.get('domiciliation');
+  const userName = urlParams.get('user_name');
+  const userEmail = urlParams.get('user_email');
+  const dateParam = urlParams.get('date');
+
+  // Vérification du montant
+  if (!montantParam || isNaN(parseFloat(montantParam))) {
+    card.classList.add('error-sync');
+    card.querySelector('h2').textContent = "❌ Synchronisation Échouée";
+    montantDisplay.textContent = "Montant inconnu ou invalide.";
+    syncMessage.textContent = "Erreur: Le montant du virement n'a pas été transmis par le formulaire.";
+    return;
+  }
+
+  // Affichage des détails du virement
+  const montantNum = parseFloat(montantParam);
+  montantDisplay.textContent = formatCurrency(montantNum);
+  details.innerHTML = `
+    <p><strong>Motif :</strong> ${motif || '-'}</p>
+    <p><strong>IBAN :</strong> ${iban || '-'}</p>
+    <p><strong>BIC :</strong> ${bic || '-'}</p>
+    <p><strong>Domiciliation :</strong> ${domiciliation || '-'}</p>
+    <p><strong>Nom :</strong> ${userName || '-'}</p>
+    <p><strong>Email :</strong> ${userEmail || '-'}</p>
+    <p><strong>Date :</strong> ${dateParam || new Date().toLocaleDateString('fr-FR')}</p>
+  `;
+
+  try {
+    // Récupération utilisateur
+    const user = await getAndSetCurrentUser();
+    if (!user) throw new Error("Utilisateur non connecté ou non trouvé.");
+
+    // Calcul nouveau solde
+    const nouveauSolde = parseFloat((user.solde - montantNum).toFixed(2));
+    if (nouveauSolde < 0) throw new Error("Solde insuffisant pour ce virement.");
+
+    user.solde = nouveauSolde;
+
+    // Historique (antéchronologique)
+    if (!user.historique) user.historique = [];
+    user.historique.unshift({
+      date: new Date().toLocaleString('fr-FR'),
+      libelle: `Virement vers ${domiciliation || 'Bénéficiaire'}`,
+      montant: -montantNum,
+      type: 'debit'
+    });
+
+    // Sauvegarde
+    await updateCurrentUser(user);
+
+    syncMessage.textContent = `Le montant de ${formatCurrency(montantNum)} a été débité. Nouveau solde : ${formatCurrency(user.solde)}.`;
+
+  } catch (e) {
+    card.classList.remove('success-card');
+    card.classList.add('error-sync');
+    card.querySelector('h2').textContent = "❌ Transaction Échouée";
+    syncMessage.textContent = "Erreur: Le débit n'a pas été effectué. Raison : " + e.message;
+  }
+});
+</script>
+</body>
+</html>

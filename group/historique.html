@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title> Historique des Transactions</title>
+  <link rel="stylesheet" href="styles.css"><link rel="shortcut icon" href="https://lh3.googleusercontent.com/ywesC1_Rzifbvs8qVqqp5xJQN1IkP2VQ7hcDU7KKiNJx7nb5oD4bE3VNN9Pk3ZGaFHtF=w300" />
+  <style>
+    .historical-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .historical-table th, .historical-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    .historical-table th { background-color: #f2f2f2; }
+    .credit { color: #38c172; font-weight: bold; }
+    .debit { color: #cc0000; font-weight: bold; }
+    .historical-table tr:nth-child(even) { background-color: #f9f9f9; }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/United_Bank_for_Africa_logo.svg/1280px-United_Bank_for_Africa_logo.svg.png" alt="Ecobank Logo" height="120">
+    <small style="display:block;">« Africa's Global Bank »</small>
+  </div>
+  <div>
+    <input type="text" placeholder="Rechercher sur le site" style="padding:6px 8px; border-radius:5px; border: none;">
+  </div>
+</header>
+
+<nav>
+  <a href="#">Banque au quotidien</a>
+  <a href="#">Épargne</a>
+  <a href="#">Crédit</a>
+  <a href="#">Assurances</a>
+  <a href="#">Patrimoine</a>
+</nav>
+
+<div class="full-container">
+  <aside class="sidebar">
+    <h3 id="sidebar-name">Chargement...</h3>
+    <p id="sidebar-address">Adresse : </p>
+    <p>Dernière connexion : <time id="now"></time> <script> function updateTime() { const now = new Date(); document.getElementById("now").textContent = now.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "medium" }); } updateTime(); setInterval(updateTime, 1000); </script></p>
+    <button onclick="logout()">Se déconnecter</button>
+
+    <hr>
+
+    <p><a href="dashboard.html">Mes comptes</a></p>
+    <p><a href="rib.html">Mon RIB</a></p>
+    <p><a href="mes-cartes.html">Mes cartes</a></p>
+    <p><a href="profil.html">Mon profil</a></p>
+
+    <hr>
+
+    <h4>Opérations</h4>
+    <a href="virement.html">Faire un Virement</a>
+    <a href="ajouter-beneficiaire.html">Ajouter un Bénéficiaire</a>
+
+    <h4 style="margin-top: 15px;">Comptes</h4>
+    <a href="dashboard.html">Synthèse</a>
+    <a href="historique.html">Historique</a> <a href="#">Téléchargement</a>
+
+    <p style="margin-top: 15px;"><a href="#">Souscrire en ligne</a></p>
+  </aside>
+
+  <main class="main">
+    <h2>Historique des Transactions</h2>
+
+    <div id="balance-info"></div>
+    <table class="historical-table">      <thead>        <tr>          <th style="width: 15%;">Date</th>          <th style="width: 55%;">Libellé de l'Opération</th>          <th style="width: 15%; text-align: center;">Type</th>          <th style="width: 15%; text-align: right;">Montant</th>        </tr>      </thead>          </table>    <p style="margin-top: 20px; font-size: 14px;">Les transactions sont présentées par ordre antéchronologique (du plus récent au plus ancien).</p> </p>	<table border="1" cellspacing="0" cellpadding="8">  <thead>    <tr>      <th>Date</th>      <th>Libellé de l’Opération</th>      <th>Type</th>      <th>Montant</th>    </tr>  </thead>  <tbody>    <tr>      <td>20/04/2026</td>      <td>VIREMENT A VIRGINIE - STATUT BLOQUE</td>      <td>DÉBIT</td>      <td style="color:red;">- 5 000,00 €</td>    </tr>    <tr>      <td>18/04/2026</td>      <td>VIREMENT EMIS A CARL HAGGE</td>      <td>DÉBIT</td>      <td style="color:red;">- 35 000,00 €</td>    </tr>    <tr>      <td>17/04/2026</td>      <td>VIREMENT EMIS A FORSTER</td>      <td>DÉBIT</td>      <td style="color:red;">- 50 000,00 €</td>    </tr>    <tr>      <td>13/04/2026</td>      <td>VERSEMENT SUR CPTE 13.04.2026</td>      <td>CRÉDIT</td>      <td style="color:green;">+ 737 000,00 €</td>    </tr>    <tr>      <td>13/04/2026</td>      <td>VERSEMENT EN ESPECES 13.04.2026</td>      <td>CRÉDIT</td>      <td style="color:green;">+ 3 000,00 €</td>    </tr>    <tr>      <td>15/02/2026</td>      <td>VERSEMENT EN ESPECES 15.02.2026</td>      <td>CRÉDIT</td>      <td style="color:green;">+ 10 000,00 €</td>    </tr>  </tbody></table>  </main></div>
+
+<footer>
+  Mentions légales – Sécurité – Accessibilité – Plan du site
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="shared.js"></script>
+<script>
+function displayHistoricalData(historique) {
+  const tbody = document.getElementById('historical-data');
+  tbody.innerHTML = '';
+
+  if (!historique || historique.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Aucune transaction enregistrée.</td></tr>';
+    return;
+  }
+
+  historique.forEach(transaction => {
+    const montantFormatte = formatCurrency(Math.abs(transaction.montant));
+    const typeClass = transaction.type === 'credit' ? 'credit' : 'debit';
+    const typeDisplay = transaction.type === 'credit' ? 'CRÉDIT' : 'DÉBIT';
+    const signeMontant = transaction.type === 'debit' ? '-' : '+';
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${transaction.date}</td>
+      <td>${transaction.libelle}</td>
+      <td style="text-align: center;">${typeDisplay}</td>
+      <td style="text-align: right;" class="${typeClass}">${signeMontant} ${montantFormatte}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  updateUI();
+
+  const user = await getAndSetCurrentUser();
+  if (user && user.historique) {
+    document.getElementById('balance-info').innerHTML = `
+      <p>Solde actuel : <strong style="color: var(--primary-color);">${formatCurrency(user.solde)}</strong></p>
+    `;
+    displayHistoricalData(user.historique);
+  } else {
+    document.getElementById('historical-data').innerHTML = '<tr><td colspan="4" style="text-align: center;">Impossible de charger les données. Veuillez vous reconnecter.</td></tr>';
+    if (!user) window.location.href = 'index.html';
+  }
+});
+</script>
+</body>
+</html>

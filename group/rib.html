@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title> Mon RIB</title>
+    <link rel="stylesheet" href="styles.css"><link rel="shortcut icon" href="https://i.pinimg.com/736x/07/47/8d/07478deafe9d06f4c248fd783859930e.jpg<link rel="shortcut icon" href="https://lh3.googleusercontent.com/ywesC1_Rzifbvs8qVqqp5xJQN1IkP2VQ7hcDU7KKiNJx7nb5oD4bE3VNN9Pk3ZGaFHtF=w300" />
+</head>
+<body>
+
+<header>
+    <div>
+       <img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/United_Bank_for_Africa_logo.svg/1280px-United_Bank_for_Africa_logo.svg.png" alt="Ecobank Logo" height="120">    <small style="display:block;">« Africa's Global Bank »</small>
+    </div>
+    <div>
+        <input type="text" placeholder="Rechercher sur le site" style="padding:6px 8px; border-radius:5px; border: none;">
+    </div>
+</header>
+
+<nav>
+    <a href="#">Banque au quotidien</a>
+    <a href="#">Épargne</a>
+    <a href="#">Crédit</a>
+    <a href="#">Assurances</a>
+    <a href="#">Patrimoine</a>
+</nav>
+
+<div class="full-container"> 
+    <aside class="sidebar">
+        <h3 id="sidebar-name">Chargement...</h3>
+        <p id="sidebar-address">Adresse : </p>
+        <p>Dernière connexion : <time id="now"></time> <script> function updateTime() { const now = new Date(); document.getElementById("now").textContent = now.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "medium" }); } updateTime(); setInterval(updateTime, 1000); </script></p>
+        <button onclick="logout()">Se déconnecter</button>
+        
+        <hr>
+        
+        <p><a href="dashboard.html">Mes comptes</a></p>
+        <p><a href="rib.html">Mon RIB</a></p>
+        <p><a href="mes-cartes.html">Mes cartes</a></p>
+        <p><a href="profil.html">Mon profil</a></p>
+
+        <hr>
+
+        <h4>Opérations</h4>
+        <a href="virement.html">Faire un Virement</a>
+        <a href="ajouter-beneficiaire.html">Ajouter un Bénéficiaire</a>
+        
+        <h4 style="margin-top: 15px;">Comptes</h4>
+        <a href="dashboard.html">Synthèse</a>
+        <a href="historique.html">Historique</a>
+        <a href="#">Téléchargement</a>
+
+        <p style="margin-top: 15px;"><a href="#">Souscrire en ligne</a></p>
+    </aside>
+
+    <main class="main">
+        <h2>Relevé d'Identité Bancaire (RIB)</h2>
+        <p>Ce document est téléchargeable au format PDF et contient toutes les informations nécessaires pour recevoir des virements.</p>
+        
+        <table>
+            <tr><th style="width: 30%;">Titulaire du compte</th><td id="rib-titulaire">Chargement...</td></tr>
+            <tr><th>IBAN</th><td id="rib-iban">Chargement...</td></tr>
+            <tr><th>Code BIC (SWIFT)</th><td id="rib-bic">Chargement...</td></tr>
+            <tr><th>Domiciliation (Banque)</th><td id="rib-domiciliation">Chargement...</td></tr>
+            <tr><th>Agence</th><td id="rib-agence">Chargement...</td></tr>
+        </table>
+
+        <button class="btn-primary" style="margin-top: 25px;">Télécharger mon RIB (PDF)</button>
+    </main>
+</div>
+
+
+<footer>
+    Mentions légales – Sécurité – Accessibilité – Plan du site
+</footer>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="shared.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Mise à jour des informations de la sidebar via la fonction de shared.js
+    updateUI(); 
+    
+    // 2. Récupérer les données les plus fraîches
+    const user = await getAndSetCurrentUser();
+    
+    if (user && user.rib) {
+        // 3. Affichage des données du RIB
+        document.getElementById('rib-titulaire').textContent = user.nom.toUpperCase();
+        
+        // Les valeurs par défaut seront utilisées si non définies dans shared.js
+        document.getElementById('rib-domiciliation').textContent = user.rib.domiciliation || 'ECOBANK CÔTE D\'IVOIRE';
+        document.getElementById('rib-agence').textContent = user.rib.agence || 'ABIDJAN PLATEAU';
+        document.getElementById('rib-iban').textContent = user.rib.iban;
+        document.getElementById('rib-bic').textContent = user.rib.bic || 'ECOCCIVAXXX';
+    } else {
+        // Si l'utilisateur n'est pas connecté
+        window.location.href = 'index.html';
+    }
+});
+</script>
+</body>
+</html>

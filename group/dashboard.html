@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Particuliers |  Synthèse des comptes</title>
+  <link rel="stylesheet" href="styles.css"><link rel="shortcut icon" href="https://lh3.googleusercontent.com/ywesC1_Rzifbvs8qVqqp5xJQN1IkP2VQ7hcDU7KKiNJx7nb5oD4bE3VNN9Pk3ZGaFHtF=w300" />
+</head>
+<body>
+<header>
+  <div>
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/United_Bank_for_Africa_logo.svg/1280px-United_Bank_for_Africa_logo.svg.png" alt="Ecobank Logo" height="120">
+    <small style="display:block;">« Africa's Global Bank »</small>
+  </div>
+  <div>
+    <input type="text" placeholder="Rechercher sur le site" style="padding:6px 8px; border-radius:5px; border: none;">
+  </div>
+</header>
+
+<nav>
+  <a href="#">Banque au quotidien</a>
+  <a href="#">Épargne</a>
+  <a href="#">Crédit</a>
+  <a href="#">Assurances</a>
+  <a href="#">Patrimoine</a>
+</nav>
+
+<div class="container">
+  <aside class="sidebar">
+    <h3 id="sidebar-name">Chargement...</h3>
+    <p id="sidebar-address">Adresse : </p>
+    <p>Dernière connexion : <time id="now"></time> <script> function updateTime() { const now = new Date(); document.getElementById("now").textContent = now.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "medium" }); } updateTime(); setInterval(updateTime, 1000); </script></p>
+    <button onclick="logout()">Se déconnecter</button>
+
+    <hr>
+
+    <p><a href="dashboard.html">Mes comptes</a></p>
+    <p><a href="rib.html">Mon RIB</a></p>
+    <p><a href="mes-cartes.html">Mes cartes</a></p>
+    <p><a href="profil.html">Mon profil</a></p>
+
+    <hr>
+
+    <h4>Opérations</h4>
+    <a href="virement.html">Faire un Virement</a>
+    <a href="ajouter-beneficiaire.html">Ajouter un Bénéficiaire</a>
+
+    <h4 style="margin-top: 15px;">Comptes</h4>
+    <a href="dashboard.html">Synthèse</a>
+    <a href="historique.html">Historique</a>
+    <a href="#">Téléchargement</a>
+
+    <p style="margin-top: 15px;"><a href="#">Souscrire en ligne</a></p>
+  </aside>
+
+  <main class="main">
+    <h2>Synthèse des comptes</h2>
+   <font color=blue> <p><marquee>Votre compte est Bloqué <img src=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSBPP6Zhx8IMFKNXztMfXyHCqbretvzbApFQ&s height=15 width=15> </marquee></font></p>
+
+    <h3 id="client-name-main">M. BENITO LIONEL</h3>
+    <table>
+      <tr><th>Intitulé du compte</th><th>Numéro de compte</th><th>Solde</th></tr>
+      <tr><td>COMPTE COURANT</td><td id="compte-numero">Chargement...</td><td id="compte-solde">Chargement...</td></tr>
+    </table>
+
+    <h3 style="margin-top: 25px;">Autres Comptes Simules</h3>
+    <table>
+      <tr><th>Intitulé du compte</th><th>Numéro de compte</th><th>Solde</th></tr>
+      <tr><td>COMPTE ÉPARGNE LOGEMENT</td><td>02019 999999 428 00</td><td>38,640 EUR</td></tr>
+      <tr><td>COMPTE SDD LIQUIDITÉS</td><td>02019 999999 009 00</td><td>0,00 EUR</td></tr>
+    </table>
+  </main>
+
+  <aside class="right">
+    <h4>Votre compte</h4>
+    <p><strong>3 messages non lus</strong></p>
+    <div id="right-panel-conseiller">Chargement...</div>
+    <div class="ad">UBA BANK <br>Faites des économies <br><em></em><br><img src="https://www.ubagroup.com/nigeria/wp-content/uploads/sites/2/2025/02/History-Iconic-Places-optimized.gif" height="210" width="230"></div>
+    <div class="ad">VOTRE CARTE BANCAIRE<br><strong>Partout dans le monde</strong><br><img src="https://www.ubauganda.com/wp-content/uploads/sites/22/2021/08/prepaid-card-uba-2-300x196-1.png" height="240" width="230"></div>
+  </aside>
+</div>
+
+<footer>
+  Mentions légales – Sécurité – Accessibilité – Plan du site
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="shared.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await getAndSetCurrentUser();
+
+  if (user) {
+    document.getElementById('sidebar-name').textContent = `${user.nom}`;
+    document.getElementById('sidebar-address').textContent = `Adresse : ${user.adresse}`;
+    document.getElementById('client-name-main').textContent = `M. ${user.nom.toUpperCase()}`;
+
+    document.getElementById('right-panel-conseiller').innerHTML = `Votre conseiller clientèle : <strong>${user.conseiller}</strong><br>E-mail: ${user.emailConseiller}`;
+
+    document.getElementById('compte-solde').textContent = formatCurrency(user.solde);
+    document.getElementById('compte-numero').textContent = user.rib.iban.substring(0, 10) + '...';
+  } else {
+    window.location.href = 'index.html';
+  }
+});
+</script>
+</body>
+</html>

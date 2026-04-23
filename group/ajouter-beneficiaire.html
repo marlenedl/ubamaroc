@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ajouter un Bénéficiaire</title><link rel="shortcut icon" href="https://lh3.googleusercontent.com/ywesC1_Rzifbvs8qVqqp5xJQN1IkP2VQ7hcDU7KKiNJx7nb5oD4bE3VNN9Pk3ZGaFHtF=w300" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+</head><body><header>    <div>      <img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/United_Bank_for_Africa_logo.svg/1280px-United_Bank_for_Africa_logo.svg.png" alt="Ecobank Logo" height="120">    <small style="display:block;">« Africa's Global Bank »</small>    </div>    <div>        <input type="text" placeholder="Rechercher sur le site" style="padding:6px 8px; border-radius:5px; border: none;">    </div></header><nav>    <a href="#">Banque au quotidien</a>    <a href="#">Épargne</a>    <a href="#">Crédit</a>    <a href="#">Assurances</a>    <a href="#">Patrimoine</a></nav><div class="full-container">     <aside class="sidebar">        <h3 id="sidebar-name">Chargement...</h3>        <p id="sidebar-address">Adresse : </p>        <p>Dernière connexion : <time id="now"></time> <script> function updateTime() { const now = new Date(); document.getElementById("now").textContent = now.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "medium" }); } updateTime(); setInterval(updateTime, 1000); </script></p>        <button onclick="logout()">Se déconnecter</button>                <hr>                <p><a href="dashboard.html">Mes comptes</a></p>        <p><a href="rib.html">Mon RIB</a></p>        <p><a href="mes-cartes.html">Mes cartes</a></p>        <p><a href="profil.html">Mon profil</a></p>        <hr>        <h4>Opérations</h4>        <a href="virement.html">Faire un Virement</a>        <a href="ajouter-beneficiaire.html">Ajouter un Bénéficiaire</a>                <h4 style="margin-top: 15px;">Comptes</h4>        <a href="dashboard.html">Synthèse</a>        <a href="historique.html">Historique</a>        <a href="#">Téléchargement</a>        <p style="margin-top: 15px;"><a href="#">Souscrire en ligne</a></p>    </aside>    <main class="main">
+
+    <main class="main">
+        <h2>Ajouter un Nouveau Bénéficiaire</h2>
+
+        <div class="form-card">
+            <form id="add-beneficiary-form">
+                <label for="benef-nom">Nom Complet du Bénéficiaire :</label>
+                <input type="text" id="benef-nom" required>
+
+                <label for="benef-iban">IBAN du Compte (Ex: FR76...) :</label>
+                <input type="text" id="benef-iban" pattern="[A-Za-z0-9\s]{15,34}" placeholder="FR76 0000 0000 0000 0000 0000 000" required>
+                
+                <label for="benef-alias">Alias (Nom pour vous) :</label>
+                <input type="text" id="benef-alias" placeholder="Ex: Compte Épargne" required>
+                
+                <p id="benef-message" class="error" style="display: none;"></p>
+
+                <button type="submit" class="btn-primary" id="submit-btn">Ajouter le Bénéficiaire</button>
+            </form>
+        </div>
+
+        <h3 style="margin-top: 25px;">Liste des Bénéficiaires actuels</h3>
+        <table id="benef-list-table">
+            <thead>
+                <tr><th>Alias</th><th>Nom</th><th>IBAN</th></tr>
+            </thead>
+            <tbody id="benef-list">
+                <tr><td colspan="3">Chargement...</td></tr>
+            </tbody>
+        </table>
+    </main>
+</div>
+
+<footer>
+    Mentions légales – Sécurité – Accessibilité – Plan du site
+</footer>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="shared.js"></script>
+<script>
+let currentUserData = null; // Variable pour stocker les données utilisateur chargées de manière asynchrone
+
+function loadBeneficiaries(user) {
+    const list = document.getElementById('benef-list');
+    list.innerHTML = '';
+    if (user.beneficiaires && user.beneficiaires.length === 0) {
+        list.innerHTML = '<tr><td colspan="3">Aucun bénéficiaire enregistré.</td></tr>';
+        return;
+    }
+    if (!user.beneficiaires) {
+        user.beneficiaires = [];
+    }
+
+    user.beneficiaires.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${b.alias}</td>
+            <td>${b.nom}</td>
+            <td>${b.iban}</td>
+        `;
+        list.appendChild(tr);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Mise à jour de l'UI avec les données du LocalStorage (plus rapide)
+    updateUI(); 
+    
+    // Récupération des données fraîches et mise à jour de la variable globale
+    currentUserData = await getAndSetCurrentUser();
+    
+    const form = document.getElementById('add-beneficiary-form');
+    const messageEl = document.getElementById('benef-message');
+    const submitBtn = document.getElementById('submit-btn');
+
+    if (currentUserData) {
+        // Affichage initial des bénéficiaires chargés de Firebase
+        loadBeneficiaries(currentUserData);
+
+        // Rendre le gestionnaire d'événement ASYNCHRONE
+        form.addEventListener('submit', async function(e) { 
+            e.preventDefault();
+            messageEl.style.display = 'none';
+            submitBtn.disabled = true; // Désactiver le bouton pendant le traitement
+
+            const nom = document.getElementById('benef-nom').value;
+            const iban = document.getElementById('benef-iban').value.toUpperCase().replace(/\s/g, '');
+            const alias = document.getElementById('benef-alias').value;
+
+            // Simple validation d'IBAN
+            if (iban.length < 15) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'IBAN trop court ou invalide.';
+                messageEl.style.display = 'block';
+                submitBtn.disabled = false;
+                return;
+            }
+            
+            try {
+                // Ajout du nouveau bénéficiaire à l'objet local
+                if (!currentUserData.beneficiaires) currentUserData.beneficiaires = [];
+                currentUserData.beneficiaires.push({ nom, iban, alias });
+                
+                // Sauvegarde ASYNCHRONE sur Firebase
+                await updateCurrentUser(currentUserData);
+                
+                // Succès : Mise à jour de l'UI
+                loadBeneficiaries(currentUserData);
+                messageEl.className = 'success';
+                messageEl.textContent = `Le bénéficiaire "${alias}" a été ajouté avec succès et sauvegardé.`;
+                messageEl.style.display = 'block';
+                form.reset();
+
+            } catch (error) {
+                // Échec de la sauvegarde Firebase
+                console.error("Erreur de sauvegarde:", error);
+                messageEl.className = 'error';
+                messageEl.textContent = `Échec de l'ajout du bénéficiaire sur le serveur. Réessayez.`;
+                messageEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false; // Réactiver le bouton
+            }
+        });
+    } else {
+        // Gérer le cas où l'utilisateur n'est pas trouvé (devrait être géré par checkLogin)
+        document.getElementById('benef-list').innerHTML = '<tr><td colspan="3">Veuillez vous reconnecter pour gérer les bénéficiaires.</td></tr>';
+    }
+});
+</script>
+</body>
+</html>

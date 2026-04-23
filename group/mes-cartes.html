@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title> Mes Cartes Bancaires</title>
+    <link rel="stylesheet" href="styles.css"><link rel="shortcut icon" href="https://lh3.googleusercontent.com/ywesC1_Rzifbvs8qVqqp5xJQN1IkP2VQ7hcDU7KKiNJx7nb5oD4bE3VNN9Pk3ZGaFHtF=w300" />
+    
+    <style>
+        .carte {
+            background: linear-gradient(135deg, #004b91, #964939);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            width: 350px;
+            margin: 20px 0;
+        }
+        .carte h3 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .carte-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .carte-numero {
+            font-size: 24px;
+            letter-spacing: 2px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        .carte-status {
+            font-weight: bold;
+            /* La couleur est gérée par le JS pour changer entre Actif/Bloqué */
+        }
+
+        /* Nouveau style pour le bouton de désactivation (couleur rouge) */
+        .btn-danger {
+            background: #cc0000; /* Rouge */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        .btn-danger:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div>
+          <img src="https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/United_Bank_for_Africa_logo.svg/1280px-United_Bank_for_Africa_logo.svg.png" alt="Ecobank Logo" height="120">    <small style="display:block;">« Africa's Global Bank »</small>
+    </div>
+    <div>
+        <input type="text" placeholder="Rechercher sur le site" style="padding:6px 8px; border-radius:5px; border: none;">
+    </div>
+</header>
+
+<nav>
+    <a href="#">Banque au quotidien</a>
+    <a href="#">Épargne</a>
+    <a href="#">Crédit</a>
+    <a href="#">Assurances</a>
+    <a href="#">Patrimoine</a>
+</nav>
+
+<div class="full-container">
+    <aside class="sidebar">
+        <h3 id="sidebar-name">Chargement...</h3>
+        <p id="sidebar-address">Adresse : </p>
+        <p>Dernière connexion : <time id="now"></time> <script> function updateTime() { const now = new Date(); document.getElementById("now").textContent = now.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "medium" }); } updateTime(); setInterval(updateTime, 1000); </script></p>
+        <button onclick="logout()">Se déconnecter</button>
+        
+        <hr>
+        
+        <p><a href="dashboard.html">Mes comptes</a></p>
+        <p><a href="rib.html">Mon RIB</a></p>
+        <p><a href="mes-cartes.html">Mes cartes</a></p>
+        <p><a href="profil.html">Mon profil</a></p>
+
+        <hr>
+
+        <h4>Opérations</h4>
+        <a href="virement.html">Faire un Virement</a>
+        <a href="ajouter-beneficiaire.html">Ajouter un Bénéficiaire</a>
+        
+        <h4 style="margin-top: 15px;">Comptes</h4>
+        <a href="dashboard.html">Synthèse</a>
+        <a href="historique.html">Historique</a>
+        <a href="#">Téléchargement</a>
+
+        <p style="margin-top: 15px;"><a href="#">Souscrire en ligne</a></p>
+    </aside>
+
+    <main class="main">
+        <h2>Mes Cartes Bancaires</h2>
+        
+        <div id="card-container" class="carte">
+            <h3>UBA </h3>
+            <p style="text-align: right; font-weight: bold; font-size: 20px;">VISA</p>
+            <div class="carte-numero" id="card-number">XXXX XXXX XXXX XXXX</div>
+            <div class="carte-info">
+                <div>Titulaire: <span id="card-titulaire"></span></div>
+                <div>Expire Fin: <span id="card-expiration"></span></div>
+            </div>
+            <p class="carte-status" id="card-status"></p>
+        </div>
+
+        <button id="toggle-card-btn">Chargement...</button>
+        <p style="margin-top: 10px; font-size: 13px;">Vous pouvez désactiver temporairement votre carte pour des raisons de sécurité.</p>
+    </main>
+</div>
+
+<footer>
+    Mentions légales – Sécurité – Accessibilité – Plan du site
+</footer>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script src="shared.js"></script>
+<script>
+// Fonction pour mettre à jour l'affichage de la carte et du bouton (améliorée)
+function updateCardUI(user, toggleBtn) {
+    const statusEl = document.getElementById('card-status');
+    const status = user.carte.active;
+    
+    // Met à jour la classe du bouton pour changer la couleur
+    toggleBtn.classList.remove('btn-primary', 'btn-danger');
+
+    if (status) {
+        statusEl.textContent = "STATUT : CARTE ACTIVE";
+        statusEl.style.color = '#38c172'; // Vert (Actif)
+        toggleBtn.textContent = "Désactiver la Carte";
+        toggleBtn.classList.add('btn-danger'); // Rouge pour Désactiver
+    } else {
+        statusEl.textContent = "STATUT : CARTE INACTIVE (BLOQUÉE)";
+        statusEl.style.color = '#ffcc00'; // Jaune (Bloqué)
+        toggleBtn.textContent = "Réactiver la Carte";
+        toggleBtn.classList.add('btn-primary'); // Bleu (Primaire) pour Réactiver
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Mettre à jour l'UI avec le localStorage initial
+    updateUI();
+    
+    // 2. Récupérer les données les plus fraîches de Firebase
+    const user = await getAndSetCurrentUser();
+    const toggleBtn = document.getElementById('toggle-card-btn');
+    
+    if (user && user.carte) {
+        document.getElementById('card-number').textContent = user.carte.numero;
+        document.getElementById('card-titulaire').textContent = user.nom.toUpperCase(); // Titulaire en majuscule
+        document.getElementById('card-expiration').textContent = user.carte.expiration;
+
+        // Affichage initial
+        updateCardUI(user, toggleBtn);
+
+        // Gestionnaire d'événement ASYNCHRONE pour la bascule
+        toggleBtn.addEventListener('click', async () => {
+            const isActivating = !user.carte.active; 
+            
+            toggleBtn.disabled = true; 
+            toggleBtn.textContent = isActivating ? "Réactivation en cours..." : "Désactivation en cours...";
+
+            try {
+                // Bascule de l'état local
+                user.carte.active = isActivating; 
+                
+                // Sauvegarde ASYNCHRONE sur Firebase
+                await updateCurrentUser(user);
+                
+                // Mise à jour de l'UI après succès de la sauvegarde
+                updateCardUI(user, toggleBtn);
+                
+            } catch (error) {
+                console.error("Échec de la mise à jour de la carte sur Firebase.", error);
+                alert("Erreur: Impossible de mettre à jour le statut de la carte. Veuillez vérifier votre connexion.");
+                
+                // Annuler la bascule locale si la sauvegarde échoue
+                user.carte.active = !isActivating; 
+            } finally {
+                // S'assurer que le bouton revient à l'état cliquable
+                toggleBtn.disabled = false;
+                updateCardUI(user, toggleBtn); // Afficher le bon état
+            }
+        });
+    } else {
+        toggleBtn.textContent = "Carte non trouvée.";
+        toggleBtn.disabled = true;
+    }
+});
+</script>
+</body>
+</html>
